@@ -1,9 +1,9 @@
-import ThreeScene from "@/components/threeScene"; 
+//import ThreeScene from "@/components/threeScene"; 
+import React from "react";
+
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between">
-      <ThreeScene />
-    </main>
+    <div> Hello There </div>
   );
 }
