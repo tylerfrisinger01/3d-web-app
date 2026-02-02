@@ -1,0 +1,339 @@
+import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+interface JiraWebhookPayload {
+  webhookEvent: string;
+  issue_event_type_name?: string;
+  issue?: {
+    id: string;
+    key: string;
+    fields: {
+      summary: string;
+      description?: string;
+      assignee?: {
+        displayName: string;
+        emailAddress: string;
+      };
+      status: {
+        name: string;
+      };
+      issuetype: {
+        name: string;
+      };
+      project: {
+        key: string;
+        name: string;
+      };
+    };
+  };
+  changelog?: {
+    items: Array<{
+      field: string;
+      fromString: string | null;
+      toString: string | null;
+    }>;
+  };
+}
+
+interface SubTask {
+  title: string;
+  description: string;
+  estimatedComplexity: 'low' | 'medium' | 'high';
+  dependencies: string[];
+}
+
+interface ImplementationPlan {
+  summary: string;
+  analysis: string;
+  subtasks: SubTask[];
+  technicalApproach: string;
+  estimatedEffort: string;
+  risks: string[];
+}
+
+async function analyzeTicketWithAI(
+  ticketKey: string,
+  summary: string,
+  description: string
+): Promise<ImplementationPlan> {
+  const prompt = `You are an expert software engineer analyzing a ticket for implementation.
+
+Ticket: ${ticketKey}
+Summary: ${summary}
+Description: ${description || 'No description provided'}
+
+Please analyze this ticket and provide:
+1. A brief analysis of what needs to be done
+2. Break it down into logical subtasks (3-7 subtasks)
+3. Technical approach and architecture decisions
+4. Estimated effort
+5. Potential risks or challenges
+
+Return your response in the following JSON format:
+{
+  "summary": "Brief summary of the ticket",
+  "analysis": "Detailed analysis of requirements",
+  "subtasks": [
+    {
+      "title": "Subtask title",
+      "description": "What needs to be done",
+      "estimatedComplexity": "low|medium|high",
+      "dependencies": ["other subtask titles this depends on"]
+    }
+  ],
+  "technicalApproach": "Technical approach and architecture",
+  "estimatedEffort": "Time estimate (e.g., '2-3 days')",
+  "risks": ["Risk 1", "Risk 2"]
+}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert software engineer who analyzes tickets and creates detailed implementation plans. Always respond with valid JSON.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) {
+      throw new Error('No content in AI response');
+    }
+
+    return JSON.parse(content) as ImplementationPlan;
+  } catch (error) {
+    console.error('Error analyzing ticket with AI:', error);
+    throw error;
+  }
+}
+
+async function generateCodeForSubtask(
+  subtask: SubTask,
+  context: string
+): Promise<string> {
+  const prompt = `Generate code implementation for the following subtask:
+
+Title: ${subtask.title}
+Description: ${subtask.description}
+Context: ${context}
+
+Please provide complete, production-ready code with:
+- Proper error handling
+- TypeScript types
+- Comments explaining key logic
+- Best practices
+
+Return the code in a format that specifies the file path and content.`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert software engineer who writes clean, maintainable code following best practices.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+    });
+
+    return completion.choices[0].message.content || '';
+  } catch (error) {
+    console.error('Error generating code:', error);
+    throw error;
+  }
+}
+
+async function createGitHubBranch(ticketKey: string): Promise<string> {
+  const branchName = `feature/${ticketKey.toLowerCase()}-ai-implementation`;
+  
+  // This is a placeholder - implement actual GitHub API integration
+  console.log(`Would create branch: ${branchName}`);
+  
+  return branchName;
+}
+
+async function createPullRequest(
+  branchName: string,
+  ticketKey: string,
+  plan: ImplementationPlan
+): Promise<string> {
+  // This is a placeholder - implement actual GitHub API integration
+  const prTitle = `[${ticketKey}] ${plan.summary}`;
+  const prBody = `
+## Ticket: ${ticketKey}
+
+${plan.analysis}
+
+## Technical Approach
+${plan.technicalApproach}
+
+## Subtasks Completed
+${plan.subtasks.map((st, idx) => `${idx + 1}. ${st.title}`).join('\n')}
+
+## Estimated Effort
+${plan.estimatedEffort}
+
+## Risks Identified
+${plan.risks.map(risk => `- ${risk}`).join('\n')}
+
+---
+*This PR was automatically generated by the AI Software Engineer Agent*
+  `;
+
+  console.log('Would create PR:', { title: prTitle, body: prBody });
+  
+  return `https://github.com/org/repo/pull/123`; // Placeholder
+}
+
+async function processTicketAssignment(payload: JiraWebhookPayload) {
+  if (!payload.issue) {
+    throw new Error('No issue in payload');
+  }
+
+  const { key, fields } = payload.issue;
+  const { summary, description, assignee } = fields;
+
+  console.log(`Processing ticket assignment: ${key}`);
+  console.log(`Assigned to: ${assignee?.displayName || 'Unassigned'}`);
+
+  // Step 1: Analyze ticket with AI
+  console.log('Step 1: Analyzing ticket with AI...');
+  const plan = await analyzeTicketWithAI(
+    key,
+    summary,
+    description || ''
+  );
+
+  console.log('Implementation plan generated:', JSON.stringify(plan, null, 2));
+
+  // Step 2: Create GitHub branch
+  console.log('Step 2: Creating GitHub branch...');
+  const branchName = await createGitHubBranch(key);
+
+  // Step 3: Generate code for each subtask
+  console.log('Step 3: Generating code for subtasks...');
+  const codeGenerations: Array<{ subtask: SubTask; code: string }> = [];
+  
+  for (const subtask of plan.subtasks) {
+    console.log(`Generating code for: ${subtask.title}`);
+    const code = await generateCodeForSubtask(
+      subtask,
+      `Ticket: ${key}\nSummary: ${summary}\nTechnical Approach: ${plan.technicalApproach}`
+    );
+    codeGenerations.push({ subtask, code });
+  }
+
+  // Step 4: Run tests (placeholder)
+  console.log('Step 4: Running tests...');
+  // TODO: Implement test execution
+  const testsPass = true;
+
+  // Step 5: Create pull request
+  if (testsPass) {
+    console.log('Step 5: Creating pull request...');
+    const prUrl = await createPullRequest(branchName, key, plan);
+    console.log(`Pull request created: ${prUrl}`);
+    
+    return {
+      success: true,
+      ticketKey: key,
+      branchName,
+      prUrl,
+      plan,
+      codeGenerations: codeGenerations.length,
+    };
+  } else {
+    console.log('Tests failed, not creating PR');
+    return {
+      success: false,
+      ticketKey: key,
+      error: 'Tests failed',
+    };
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Verify webhook signature (if configured)
+    const signature = request.headers.get('x-hub-signature');
+    // TODO: Implement signature verification for security
+
+    const payload: JiraWebhookPayload = await request.json();
+
+    console.log('Received webhook:', {
+      event: payload.webhookEvent,
+      issueKey: payload.issue?.key,
+    });
+
+    // Check if this is a ticket assignment event
+    const isAssignment =
+      payload.webhookEvent === 'jira:issue_updated' &&
+      payload.changelog?.items.some(
+        (item) => item.field === 'assignee' && item.toString !== null
+      );
+
+    if (!isAssignment) {
+      return NextResponse.json({
+        message: 'Event ignored (not an assignment)',
+        event: payload.webhookEvent,
+      });
+    }
+
+    // Check if assigned to AI agent (configure this email/name)
+    const aiAgentEmail = process.env.AI_AGENT_EMAIL || 'ai-agent@example.com';
+    const assignedToAI =
+      payload.issue?.fields.assignee?.emailAddress === aiAgentEmail;
+
+    if (!assignedToAI) {
+      return NextResponse.json({
+        message: 'Ticket not assigned to AI agent',
+        assignee: payload.issue?.fields.assignee?.emailAddress,
+      });
+    }
+
+    // Process the ticket assignment asynchronously
+    // In production, you might want to use a queue system
+    const result = await processTicketAssignment(payload);
+
+    return NextResponse.json({
+      message: 'Ticket processed successfully',
+      result,
+    });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  // Health check endpoint
+  return NextResponse.json({
+    status: 'ok',
+    service: 'AI Software Engineer Agent Webhook',
+    timestamp: new Date().toISOString(),
+  });
+}
