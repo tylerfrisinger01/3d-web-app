@@ -20,7 +20,7 @@ const resetCamera = () => {
 }
 
 // No test file generated: this project does not have a testing framework
-// (jest, vitest, @testing-library/react, @types/jest) installed.
+// (jest, vitest, @testing-library/react are not installed).
 
 export default function ThreeScene() {
     return (
