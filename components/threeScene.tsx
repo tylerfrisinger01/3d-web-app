@@ -19,6 +19,9 @@ const resetCamera = () => {
     console.log("double click activated")
 }
 
+// No test file generated: this project does not have a testing framework
+// (jest, vitest, @testing-library/react, @types/jest) installed.
+
 export default function ThreeScene() {
     return (
         <Canvas>
