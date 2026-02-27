@@ -15,12 +15,16 @@ import { Canvas } from '@react-three/fiber'
 //     );
 // };
 
+const resetCamera = () => {
+    console.log("double click activated")
+}
+
 export default function ThreeScene() {
     return (
         <Canvas>
             <mesh onDoubleClick={resetCamera}>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color="hotp--ink" 
+                <meshStandardMaterial color="hotpink" />
             </mesh>
 
             <ambientLight intensity={0.5} />
