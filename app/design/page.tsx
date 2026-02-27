@@ -1,8 +1,10 @@
 import React from "react";
-
+import ThreeScene from "@/components/threeScene";
 
 export default function Design() {
     return (
-        <div> T-Rex roar</div>
+        <div className="centered-div">
+            <ThreeScene />
+        </div>
     );
 };

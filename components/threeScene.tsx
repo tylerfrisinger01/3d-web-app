@@ -4,12 +4,23 @@ import { OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 //import * as THREE from 'three'
 
+
+
+// const resetCamera = () => {
+//     console.log("double click activated")
+//     return (
+//         <Canvas camera={{position: [0, 0, 5]}}>
+//         </Canvas>
+        
+//     );
+// };
+
 export default function ThreeScene() {
     return (
         <Canvas>
-            <mesh>
+            <mesh onDoubleClick={resetCamera}>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color="hotpink" />
+                <meshStandardMaterial color="hotp--ink" 
             </mesh>
 
             <ambientLight intensity={0.5} />
