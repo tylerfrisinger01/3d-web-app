@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { Navbar } from "./components/Navbar";
-
-
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "3D Builder", // need a better name
-  description: "Web application for creating buildings", // need a better description
+  title: 'Website',
+  description: 'Website description',
 };
 
 export default function RootLayout({
@@ -16,10 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-950 text-slate">
-        <Navbar />
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
