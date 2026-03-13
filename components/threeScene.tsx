@@ -17,7 +17,7 @@ function RotatingBox() {
 
   return (
     <mesh ref={meshRef}>
-      <boxGeometry args={[1, 1, 1]} />
+      <boxGeometry args={[2, 2, 2]} />
       <meshStandardMaterial color="royalblue" />
     </mesh>
   );
@@ -26,7 +26,7 @@ function RotatingBox() {
 export default function ThreeScene() {
   return (
     <div style={{ width: "100%", height: "500px" }}>
-      <Canvas camera={{ position: [0, 0, 5] }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 5, 5]} intensity={1} />
         <RotatingBox />
