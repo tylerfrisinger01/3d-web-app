@@ -18,9 +18,9 @@ import { Canvas } from '@react-three/fiber'
 export default function ThreeScene() {
     return (
         <Canvas>
-            <mesh onDoubleClick={resetCamera}>
+            <mesh>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color="hotp--ink" 
+                <meshStandardMaterial color="hotpink" />
             </mesh>
 
             <ambientLight intensity={0.5} />
